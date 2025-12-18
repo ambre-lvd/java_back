@@ -1,79 +1,55 @@
 package fr.univcours.api;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.IOException;
-import java.io.InputStream;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Service pour gérer les utilisateurs
- * Charge les utilisateurs depuis un fichier JSON
+ * Service pour gérer les utilisateurs via une base de données MySQL
  */
 public class UserService {
-    private List<User> users;
-    private int nextId;
-    private final ObjectMapper objectMapper;
+    // Configuration de la base de données
+    private static final String JDBC_URL = "jdbc:mysql://localhost:3306/isen";
+    private static final String JDBC_USER = "root";
+    private static final String JDBC_PASSWORD = ""; // Modifié de null à vide pour la compatibilité JDBC
 
     public UserService() {
-        this.objectMapper = new ObjectMapper();
-        this.users = new ArrayList<>();
-        this.nextId = 1;
-
-        // Charger les utilisateurs depuis le fichier JSON
-        loadUsersFromJson();
-    }
-
-    /**
-     * Charge les utilisateurs depuis users.json
-     */
-    private void loadUsersFromJson() {
+        // On vérifie que le driver est présent (optionnel selon la version de Java)
         try {
-            // Charger le fichier depuis les ressources
-            InputStream inputStream = getClass().getClassLoader()
-                    .getResourceAsStream("users.json");
-
-            if (inputStream == null) {
-                System.err.println("⚠️  Fichier non trouvé, données par défaut");
-                initializeDefaultUsers();
-                return;
-            }
-
-            // Désérialiser le JSON en liste d'utilisateurs
-            users = objectMapper.readValue(inputStream,
-                    new TypeReference<List<User>>() {});
-
-            // Calculer le prochain ID disponible
-            nextId = users.stream()
-                    .mapToInt(User::getId)
-                    .max()
-                    .orElse(0) + 1;
-
-            System.out.println("✅ " + users.size() +
-                    " utilisateurs chargés depuis users.json");
-
-        } catch (IOException e) {
-            System.err.println("❌ Erreur: " + e.getMessage());
-            initializeDefaultUsers();
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            System.err.println("❌ Driver MySQL non trouvé !");
         }
     }
 
     /**
-     * Initialise des utilisateurs par défaut (fallback)
-     */
-    private void initializeDefaultUsers() {
-        users.add(new User(nextId++, "Alice Dupont", "alice@example.com", 25));
-        users.add(new User(nextId++, "Bob Martin", "bob@example.com", 30));
-        System.out.println("✅ Utilisateurs par défaut initialisés");
-    }
-
-    /**
-     * Récupère tous les utilisateurs
+     * Récupère tous les utilisateurs depuis la base de données
      */
     public List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
+        String query = "SELECT * FROM user";
+
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                User user = new User();
+                user.setId(rs.getInt("id"));
+                user.setName(rs.getString("name"));
+                user.setEmail(rs.getString("email"));
+                // Si tu as un champ age dans ta table :
+                // user.setAge(rs.getInt("age"));
+
+                users.add(user);
+            }
+            System.out.println("✅ " + users.size() + " utilisateurs récupérés depuis la BD");
+
+        } catch (SQLException e) {
+            System.err.println("❌ Erreur lors de la lecture des utilisateurs : " + e.getMessage());
+            throw new RuntimeException(e);
+        }
         return users;
     }
 
@@ -81,17 +57,53 @@ public class UserService {
      * Récupère un utilisateur par son ID
      */
     public Optional<User> getUserById(int id) {
-        return users.stream()
-                .filter(user -> user.getId() == id)
-                .findFirst();
+        String query = "SELECT * FROM user WHERE id = ?";
+
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    User user = new User();
+                    user.setId(rs.getInt("id"));
+                    user.setName(rs.getString("name"));
+                    user.setEmail(rs.getString("email"));
+                    return Optional.of(user);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Erreur lors de la recherche de l'utilisateur " + id);
+            throw new RuntimeException(e);
+        }
+        return Optional.empty();
     }
 
     /**
-     * Ajoute un nouvel utilisateur
+     * Ajoute un nouvel utilisateur dans la base de données
      */
     public User addUser(User user) {
-        user.setId(nextId++);
-        users.add(user);
-        return user;
+        String query = "INSERT INTO user (name, email) VALUES (?, ?)";
+
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+
+            pstmt.setString(1, user.getName());
+            pstmt.setString(2, user.getEmail());
+            pstmt.executeUpdate();
+
+            // Récupère l'ID auto-généré par la base de données
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    user.setId(generatedKeys.getInt(1));
+                }
+            }
+            System.out.println("✅ Utilisateur ajouté avec l'ID : " + user.getId());
+            return user;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Erreur lors de l'ajout de l'utilisateur : " + e.getMessage());
+            throw new RuntimeException(e);
+        }
     }
 }
