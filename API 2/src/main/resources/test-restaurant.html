@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Restaurant Console</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; display: flex; gap: 40px; }
+        .section { border: 1px solid #ccc; padding: 20px; border-radius: 8px; width: 45%; }
+        h2 { color: #2c3e50; }
+        button { background: #27ae60; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 4px; }
+        .dish-item { margin: 10px 0; padding: 5px; border-bottom: 1px solid #eee; }
+        #result { background: #f9f9f9; padding: 10px; margin-top: 10px; border-left: 5px solid #27ae60; }
+    </style>
+</head>
+<body>
+
+<div class="section">
+    <h2>1. La Carte (Menu)</h2>
+    <button onclick="fetchMenu()">Charger le Menu</button>
+    <div id="menu-list"></div>
+</div>
+
+<div class="section">
+    <h2>2. Passer une Commande</h2>
+    <p>Numéro de Table: <input type="number" id="tableNum" value="1"></p>
+    <p>IDs des plats (séparés par des virgules): <input type="text" id="dishIds" placeholder="ex: 1,2"></p>
+    <button onclick="sendOrder()">Calculer l'addition</button>
+    <div id="result"></div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:7001";
+
+    // TEST GET /menu
+    async function fetchMenu() {
+        const response = await fetch(`${API_URL}/menu`);
+        const data = await response.json();
+        const container = document.getElementById('menu-list');
+        container.innerHTML = data.map(d => `
+            <div class="dish-item">
+                <strong>ID: ${d.id}</strong> - ${d.name} (${d.category}) : <strong>${d.price}€</strong>
+            </div>
+        `).join('');
+    }
+
+    // TEST POST /orders
+    async function sendOrder() {
+        const table = document.getElementById('tableNum').value;
+        const ids = document.getElementById('dishIds').value.split(',').map(id => parseInt(id.trim()));
+
+        const response = await fetch(`${API_URL}/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tableNumber: parseInt(table), dishIds: ids })
+        });
+
+        const order = await response.json();
+        document.getElementById('result').innerHTML = `
+            <h3>Addition Table ${order.tableNumber}</h3>
+            <p>Total à payer : <strong>${order.totalAmount}€</strong></p>
+            <p>ID Commande généré : ${order.id}</p>
+        `;
+    }
+</script>
+
+</body>
+</html>
