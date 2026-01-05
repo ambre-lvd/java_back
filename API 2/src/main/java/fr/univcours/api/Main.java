@@ -27,7 +27,7 @@ public class Main {
 
         // Route GET /menu : Récupère la liste de tous les plats
         app.get("/menu", ctx -> {
-            List<Dish> menu = dishService.getMenu();
+            List<Dish> menu = dishService.getAllDishes();
             ctx.json(menu);
         });
 

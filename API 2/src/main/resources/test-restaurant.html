@@ -2,161 +2,130 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RestaurantConsole - Panel de Test</title>
+    <title>Borne de Commande Interactive</title>
     <style>
-        :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; --accent: #3498db; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1200px; margin: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .header { grid-column: 1 / -1; background: var(--primary); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; color: var(--primary); }
-        .form-group { margin-bottom: 15px; }
-        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { cursor: pointer; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; transition: 0.3s; }
-        .btn-add { background: var(--success); color: white; width: 100%; }
-        .btn-order { background: var(--accent); color: white; width: 100%; }
-        .btn-refresh { background: var(--primary); color: white; }
-        .dish-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-        .btn-delete { background: var(--danger); color: white; padding: 5px 10px; font-size: 12px; }
-        #sales-badge { font-size: 2em; color: var(--success); font-weight: bold; }
-        #order-result { margin-top: 15px; padding: 15px; background: #e8f4fd; border-radius: 5px; display: none; }
+        :root { --primary: #f39c12; --dark: #2c3e50; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg); }
+
+        /* Catégories */
+        .sidebar { width: 100px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; align-items: center; padding-top: 20px; }
+        .cat-btn { background: none; border: none; margin-bottom: 25px; cursor: pointer; font-weight: bold; color: var(--dark); }
+        .cat-btn span { font-size: 2.5em; display: block; }
+
+        /* Grille produits */
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .card { background: white; border-radius: 12px; padding: 15px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; }
+        .card:active { transform: scale(0.95); }
+        .card .price { color: var(--primary); font-weight: bold; font-size: 1.2em; margin-top: 8px; }
+
+        /* Panier */
+        .cart { width: 320px; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; }
+        .cart-title { padding: 20px; background: var(--dark); color: white; margin: 0; }
+        .cart-items { flex: 1; padding: 15px; overflow-y: auto; }
+        .item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .qty-controls button { padding: 2px 8px; cursor: pointer; }
+        .footer { padding: 20px; border-top: 2px solid #eee; }
+        .btn-order { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-size: 1.2em; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>🍽️ RestaurantConsole - Administration</h1>
-    <p>Connecté au serveur : <strong id="server-ip">localhost:7001</strong></p>
+<div class="sidebar">
+    <button class="cat-btn" onclick="filterCat('')"><span>🍴</span>Tous</button>
+    <button class="cat-btn" onclick="filterCat('Entrée')"><span>🥗</span>Entrées</button>
+    <button class="cat-btn" onclick="filterCat('Plat')"><span>🍔</span>Plats</button>
+    <button class="cat-btn" onclick="filterCat('Dessert')"><span>🍰</span>Desserts</button>
+    <button class="cat-btn" onclick="filterCat('Boisson')"><span>🥤</span>Boissons</button>
 </div>
 
-<div class="container">
+<div class="content">
+    <h1 id="catTitle">La Carte</h1>
+    <div class="grid" id="productsGrid"></div>
+</div>
 
-    <div class="card" style="grid-column: 1 / -1; text-align: center;">
-        <h2>📊 Chiffre d'Affaires Total</h2>
-        <div id="sales-badge">0.00€</div>
-        <button class="btn-refresh" onclick="fetchSales()" style="margin-top: 10px;">Actualiser les ventes</button>
+<div class="cart">
+    <h2 class="cart-title">Mon Panier</h2>
+    <div class="cart-items" id="cartList"></div>
+    <div class="footer">
+        <div style="display:flex; justify-content:space-between; font-size:1.5em; margin-bottom:15px;">
+            <span>Total</span><span id="totalTxt">0.00€</span>
+        </div>
+        <button class="btn-order" onclick="sendOrder()">VALIDER</button>
     </div>
-
-    <div class="card">
-        <h2>📜 La Carte (Menu)</h2>
-        <div class="form-group">
-            <input type="text" id="newName" placeholder="Nom du plat (ex: Pizza Royale)">
-            <input type="number" id="newPrice" placeholder="Prix (€)">
-            <select id="newCategory">
-                <option value="Entrée">Entrée</option>
-                <option value="Plat">Plat</option>
-                <option value="Dessert">Dessert</option>
-                <option value="Boisson">Boisson</option>
-            </select>
-            <button class="btn-add" onclick="addDish()" style="margin-top: 10px;">➕ Ajouter à la carte</button>
-        </div>
-        <hr>
-        <div id="menu-list">
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>💰 Prendre une Commande</h2>
-        <div class="form-group">
-            <label>Numéro de Table :</label>
-            <input type="number" id="tableNum" value="1">
-        </div>
-        <div class="form-group">
-            <label>IDs des plats (séparés par des virgules) :</label>
-            <input type="text" id="dishIds" placeholder="ex: 1, 4, 12">
-            <small>Consultez les IDs dans la liste de gauche</small>
-        </div>
-        <button class="btn-order" onclick="sendOrder()">🧾 Générer l'addition</button>
-
-        <div id="order-result">
-        </div>
-    </div>
-
 </div>
 
 <script>
-    const API_URL = "http://localhost:7001";
+    const API = "http://localhost:7001";
+    let menu = [], cart = [];
 
-    // 1. Charger le menu au démarrage
-    window.onload = () => {
-        fetchMenu();
-        fetchSales();
-    };
+    async function init() {
+        const r = await fetch(`${API}/menu`);
+        menu = await r.json();
+        render(menu);
+    }
 
-    // --- FONCTIONS MENU ---
-    async function fetchMenu() {
-        const response = await fetch(`${API_URL}/menu`);
-        const data = await response.json();
-        const container = document.getElementById('menu-list');
-        container.innerHTML = data.map(d => `
-            <div class="dish-item">
-                <span><strong>#${d.id}</strong> ${d.name} <small>(${d.category})</small></span>
-                <span>
-                    <strong>${d.price.toFixed(2)}€</strong>
-                    <button class="btn-delete" onclick="deleteDish(${d.id})">🗑️</button>
-                </span>
+    function render(items) {
+        document.getElementById('productsGrid').innerHTML = items.map(i => `
+            <div class="card" onclick="addToCart(${i.id}, '${i.name}', ${i.price})">
+                <div style="font-size:3em">${getEmoji(i.category)}</div>
+                <strong>${i.name}</strong>
+                <div class="price">${i.price.toFixed(2)}€</div>
             </div>
         `).join('');
     }
 
-    async function addDish() {
-        const name = document.getElementById('newName').value;
-        const price = document.getElementById('newPrice').value;
-        const category = document.getElementById('newCategory').value;
-
-        if(!name || !price) return alert("Remplissez tous les champs !");
-
-        await fetch(`${API_URL}/menu`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ name, price: parseFloat(price), category })
-        });
-        fetchMenu();
+    function getEmoji(c) {
+        return c==='Entrée'?'🥗':c==='Plat'?'🍔':c==='Dessert'?'🍰':'🥤';
     }
 
-    async function deleteDish(id) {
-        if(confirm("Supprimer ce plat ?")) {
-            await fetch(`${API_URL}/menu/${id}`, { method: 'DELETE' });
-            fetchMenu();
-        }
+    function filterCat(c) {
+        document.getElementById('catTitle').innerText = c || "La Carte";
+        render(c ? menu.filter(m => m.category === c) : menu);
     }
 
-    // --- FONCTIONS COMMANDES ---
+    function addToCart(id, name, price) {
+        const item = cart.find(i => i.id === id);
+        if(item) item.qty++; else cart.push({id, name, price, qty: 1});
+        updateCart();
+    }
+
+    function updateCart() {
+        document.getElementById('cartList').innerHTML = cart.map((i, idx) => `
+            <div class="item">
+                <div><strong>${i.name}</strong><br>${i.price.toFixed(2)}€</div>
+                <div class="qty-controls">
+                    <button onclick="changeQty(${idx},-1)">-</button>
+                    <strong> ${i.qty} </strong>
+                    <button onclick="changeQty(${idx},1)">+</button>
+                </div>
+            </div>
+        `).join('');
+        const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+        document.getElementById('totalTxt').innerText = total.toFixed(2) + "€";
+    }
+
+    function changeQty(idx, d) {
+        cart[idx].qty += d;
+        if(cart[idx].qty <= 0) cart.splice(idx, 1);
+        updateCart();
+    }
+
     async function sendOrder() {
-        const table = document.getElementById('tableNum').value;
-        const idsRaw = document.getElementById('dishIds').value;
-        if(!idsRaw) return alert("Sélectionnez des plats !");
+        if(!cart.length) return;
+        const ids = [];
+        cart.forEach(i => { for(let n=0; n<i.qty; n++) ids.push(i.id); });
 
-        const ids = idsRaw.split(',').map(id => parseInt(id.trim()));
-
-        const response = await fetch(`${API_URL}/orders`, {
+        await fetch(`${API}/orders`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ tableNumber: parseInt(table), dishIds: ids })
+            body: JSON.stringify({ tableNumber: 99, dishIds: ids })
         });
-
-        const order = await response.json();
-        const resultDiv = document.getElementById('order-result');
-        resultDiv.style.display = 'block';
-        resultDiv.innerHTML = `
-            <strong>✅ Commande Enregistrée !</strong><br>
-            Table : ${order.tableNumber}<br>
-            Total : <span style="font-size:1.2em; color:var(--success)">${order.totalAmount.toFixed(2)}€</span><br>
-            <small>ID Commande : #${order.id}</small>
-        `;
-        fetchSales(); // Met à jour le CA automatiquement
+        alert("Commande envoyée !");
+        cart = []; updateCart();
     }
 
-    // --- FONCTIONS VENTES ---
-    async function fetchSales() {
-        try {
-            const response = await fetch(`${API_URL}/sales/total`);
-            const data = await response.json();
-            document.getElementById('sales-badge').innerText = `${data.totalSales.toFixed(2)}€`;
-        } catch(e) { console.error("Erreur stats", e); }
-    }
+    init();
 </script>
-
 </body>
 </html>
