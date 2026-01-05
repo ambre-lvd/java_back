@@ -44,6 +44,9 @@ public class DishService {
      * Ajoute un nouveau plat à la base de données.
      */
     public void addDish(Dish dish) {
+        if (dish.getPrice() < 0) {
+            throw new IllegalArgumentException("Le prix ne peut pas être négatif");
+        }
         String query = "INSERT INTO dishes (name, price, category) VALUES (?, ?, ?)";
 
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
@@ -135,5 +138,22 @@ public class DishService {
             e.printStackTrace();
             throw new RuntimeException("Erreur lors de la création de la commande");
         }
+    }
+
+    public double getTotalSales() {
+        double totalSales = 0;
+        String query = "SELECT SUM(total_amount) as total FROM orders";
+
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            if (rs.next()) {
+                totalSales = rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return totalSales;
     }
 }

@@ -2,64 +2,159 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Test Restaurant Console</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RestaurantConsole - Panel de Test</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; display: flex; gap: 40px; }
-        .section { border: 1px solid #ccc; padding: 20px; border-radius: 8px; width: 45%; }
-        h2 { color: #2c3e50; }
-        button { background: #27ae60; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 4px; }
-        .dish-item { margin: 10px 0; padding: 5px; border-bottom: 1px solid #eee; }
-        #result { background: #f9f9f9; padding: 10px; margin-top: 10px; border-left: 5px solid #27ae60; }
+        :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; --accent: #3498db; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .header { grid-column: 1 / -1; background: var(--primary); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; color: var(--primary); }
+        .form-group { margin-bottom: 15px; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { cursor: pointer; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; transition: 0.3s; }
+        .btn-add { background: var(--success); color: white; width: 100%; }
+        .btn-order { background: var(--accent); color: white; width: 100%; }
+        .btn-refresh { background: var(--primary); color: white; }
+        .dish-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .btn-delete { background: var(--danger); color: white; padding: 5px 10px; font-size: 12px; }
+        #sales-badge { font-size: 2em; color: var(--success); font-weight: bold; }
+        #order-result { margin-top: 15px; padding: 15px; background: #e8f4fd; border-radius: 5px; display: none; }
     </style>
 </head>
 <body>
 
-<div class="section">
-    <h2>1. La Carte (Menu)</h2>
-    <button onclick="fetchMenu()">Charger le Menu</button>
-    <div id="menu-list"></div>
+<div class="header">
+    <h1>🍽️ RestaurantConsole - Administration</h1>
+    <p>Connecté au serveur : <strong id="server-ip">localhost:7001</strong></p>
 </div>
 
-<div class="section">
-    <h2>2. Passer une Commande</h2>
-    <p>Numéro de Table: <input type="number" id="tableNum" value="1"></p>
-    <p>IDs des plats (séparés par des virgules): <input type="text" id="dishIds" placeholder="ex: 1,2"></p>
-    <button onclick="sendOrder()">Calculer l'addition</button>
-    <div id="result"></div>
+<div class="container">
+
+    <div class="card" style="grid-column: 1 / -1; text-align: center;">
+        <h2>📊 Chiffre d'Affaires Total</h2>
+        <div id="sales-badge">0.00€</div>
+        <button class="btn-refresh" onclick="fetchSales()" style="margin-top: 10px;">Actualiser les ventes</button>
+    </div>
+
+    <div class="card">
+        <h2>📜 La Carte (Menu)</h2>
+        <div class="form-group">
+            <input type="text" id="newName" placeholder="Nom du plat (ex: Pizza Royale)">
+            <input type="number" id="newPrice" placeholder="Prix (€)">
+            <select id="newCategory">
+                <option value="Entrée">Entrée</option>
+                <option value="Plat">Plat</option>
+                <option value="Dessert">Dessert</option>
+                <option value="Boisson">Boisson</option>
+            </select>
+            <button class="btn-add" onclick="addDish()" style="margin-top: 10px;">➕ Ajouter à la carte</button>
+        </div>
+        <hr>
+        <div id="menu-list">
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>💰 Prendre une Commande</h2>
+        <div class="form-group">
+            <label>Numéro de Table :</label>
+            <input type="number" id="tableNum" value="1">
+        </div>
+        <div class="form-group">
+            <label>IDs des plats (séparés par des virgules) :</label>
+            <input type="text" id="dishIds" placeholder="ex: 1, 4, 12">
+            <small>Consultez les IDs dans la liste de gauche</small>
+        </div>
+        <button class="btn-order" onclick="sendOrder()">🧾 Générer l'addition</button>
+
+        <div id="order-result">
+        </div>
+    </div>
+
 </div>
 
 <script>
     const API_URL = "http://localhost:7001";
 
-    // TEST GET /menu
+    // 1. Charger le menu au démarrage
+    window.onload = () => {
+        fetchMenu();
+        fetchSales();
+    };
+
+    // --- FONCTIONS MENU ---
     async function fetchMenu() {
         const response = await fetch(`${API_URL}/menu`);
         const data = await response.json();
         const container = document.getElementById('menu-list');
         container.innerHTML = data.map(d => `
             <div class="dish-item">
-                <strong>ID: ${d.id}</strong> - ${d.name} (${d.category}) : <strong>${d.price}€</strong>
+                <span><strong>#${d.id}</strong> ${d.name} <small>(${d.category})</small></span>
+                <span>
+                    <strong>${d.price.toFixed(2)}€</strong>
+                    <button class="btn-delete" onclick="deleteDish(${d.id})">🗑️</button>
+                </span>
             </div>
         `).join('');
     }
 
-    // TEST POST /orders
+    async function addDish() {
+        const name = document.getElementById('newName').value;
+        const price = document.getElementById('newPrice').value;
+        const category = document.getElementById('newCategory').value;
+
+        if(!name || !price) return alert("Remplissez tous les champs !");
+
+        await fetch(`${API_URL}/menu`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name, price: parseFloat(price), category })
+        });
+        fetchMenu();
+    }
+
+    async function deleteDish(id) {
+        if(confirm("Supprimer ce plat ?")) {
+            await fetch(`${API_URL}/menu/${id}`, { method: 'DELETE' });
+            fetchMenu();
+        }
+    }
+
+    // --- FONCTIONS COMMANDES ---
     async function sendOrder() {
         const table = document.getElementById('tableNum').value;
-        const ids = document.getElementById('dishIds').value.split(',').map(id => parseInt(id.trim()));
+        const idsRaw = document.getElementById('dishIds').value;
+        if(!idsRaw) return alert("Sélectionnez des plats !");
+
+        const ids = idsRaw.split(',').map(id => parseInt(id.trim()));
 
         const response = await fetch(`${API_URL}/orders`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ tableNumber: parseInt(table), dishIds: ids })
         });
 
         const order = await response.json();
-        document.getElementById('result').innerHTML = `
-            <h3>Addition Table ${order.tableNumber}</h3>
-            <p>Total à payer : <strong>${order.totalAmount}€</strong></p>
-            <p>ID Commande généré : ${order.id}</p>
+        const resultDiv = document.getElementById('order-result');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `
+            <strong>✅ Commande Enregistrée !</strong><br>
+            Table : ${order.tableNumber}<br>
+            Total : <span style="font-size:1.2em; color:var(--success)">${order.totalAmount.toFixed(2)}€</span><br>
+            <small>ID Commande : #${order.id}</small>
         `;
+        fetchSales(); // Met à jour le CA automatiquement
+    }
+
+    // --- FONCTIONS VENTES ---
+    async function fetchSales() {
+        try {
+            const response = await fetch(`${API_URL}/sales/total`);
+            const data = await response.json();
+            document.getElementById('sales-badge').innerText = `${data.totalSales.toFixed(2)}€`;
+        } catch(e) { console.error("Erreur stats", e); }
     }
 </script>
 

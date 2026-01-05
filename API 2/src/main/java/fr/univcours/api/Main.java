@@ -74,6 +74,21 @@ public class Main {
         app.get("/status", ctx -> {
             ctx.json(new StatusResponse("Opérationnel", "Base de données restaurant_db connectée"));
         });
+
+        app.get("/sales/total", ctx -> {
+            double total = dishService.getTotalSales();
+            ctx.json(new SalesResponse(total));
+        });
+        app.post("/menu", ctx -> {
+            try {
+                Dish newDish = ctx.bodyAsClass(Dish.class);
+                dishService.addDish(newDish);
+                ctx.status(201).json(newDish);
+            } catch (IllegalArgumentException e) {
+                ctx.status(400).result(e.getMessage()); // Renvoie une erreur 400 (Bad Request)
+            }
+        });
+
     }
 
     // Petite classe interne pour la réponse du statut (Optionnel)
@@ -83,4 +98,12 @@ public class Main {
         public StatusResponse(String s, String m) { this.status = s; this.message = m; }
     }
 
+}
+
+class SalesResponse {
+    public double totalSales;
+
+    public SalesResponse(double totalSales) {
+        this.totalSales = totalSales;
+    }
 }
