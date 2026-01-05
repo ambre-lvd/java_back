@@ -8,14 +8,11 @@ import java.util.List;
  * Gère les routes API pour le menu et les commandes.
  */
 public class Main {
-    // Initialisation du service qui communique avec MySQL (restaurant_db)
     private static DishService dishService = new DishService();
 
     public static void main(String[] args) {
 
-        // Création de l'instance Javalin sur le port 7001
         Javalin app = Javalin.create(config -> {
-            // Activation du CORS pour permettre au Front-end de communiquer avec le Back-end
             config.plugins.enableCors(cors -> {
                 cors.add(it -> it.anyHost());
             });
@@ -25,85 +22,65 @@ public class Main {
 
         // --- SECTION : GESTION DE LA CARTE (MENU) ---
 
-        // Route GET /menu : Récupère la liste de tous les plats
         app.get("/menu", ctx -> {
-            List<Dish> menu = dishService.getAllDishes();
-            ctx.json(menu);
+            ctx.json(dishService.getAllDishes());
         });
 
-        // Route POST /menu : Ajoute un nouveau plat à la carte
         app.post("/menu", ctx -> {
-            Dish newDish = ctx.bodyAsClass(Dish.class);
-            dishService.addDish(newDish);
-            ctx.status(201).json(newDish);
+            try {
+                Dish newDish = ctx.bodyAsClass(Dish.class);
+                dishService.addDish(newDish);
+                ctx.status(201).json(newDish);
+            } catch (Exception e) {
+                ctx.status(400).result("Erreur lors de l'ajout : " + e.getMessage());
+            }
         });
 
-        // Route DELETE /menu/{id} : Supprime un plat de la carte via son ID
+        // CORRECTION : On ne fait plus de Integer.parseInt car l'ID est un String (ex: "E1")
         app.delete("/menu/{id}", ctx -> {
-            int id = Integer.parseInt(ctx.pathParam("id"));
+            String id = ctx.pathParam("id");
             dishService.deleteDish(id);
-            ctx.status(204).result("Plat supprimé");
+            ctx.status(204);
         });
-
 
         // --- SECTION : GESTION DES COMMANDES (ADDITION) ---
 
-        /**
-         * Route POST /orders : Calcule l'addition pour une table.
-         * Prend un JSON contenant le numéro de table et une liste d'IDs de plats.
-         * Exemple JSON : { "tableNumber": 5, "dishIds": [1, 2, 4] }
-         */
         app.post("/orders", ctx -> {
-            // Utilise la classe utilitaire OrderRequest pour lire le JSON
-            OrderRequest request = ctx.bodyAsClass(OrderRequest.class);
-
-            // Appelle le service pour calculer le total et enregistrer en base
-            Order finalOrder = dishService.createOrder(request.tableNumber, request.dishIds);
-
-            // Renvoie l'objet Order complet (avec total et détails des plats)
-            ctx.status(201).json(finalOrder);
+            try {
+                OrderRequest request = ctx.bodyAsClass(OrderRequest.class);
+                // Le service attend maintenant List<String> dishIds
+                Order finalOrder = dishService.createOrder(request.tableNumber, request.dishIds);
+                ctx.status(201).json(finalOrder);
+            } catch (Exception e) {
+                ctx.status(400).result("Erreur commande : " + e.getMessage());
+            }
         });
 
+        // --- SECTION : STATUT ET STATISTIQUES ---
 
-        // --- SECTION : STATUT DU SYSTÈME ---
-
-        app.get("/", ctx -> {
-            ctx.result("Bienvenue sur l'API RestaurantConsole. Utilisez /menu pour voir la carte.");
-        });
+        app.get("/", ctx -> ctx.result("API RestaurantConsole opérationnelle."));
 
         app.get("/status", ctx -> {
-            ctx.json(new StatusResponse("Opérationnel", "Base de données restaurant_db connectée"));
+            ctx.json(new StatusResponse("Opérationnel", "Base de données connectée"));
         });
 
         app.get("/sales/total", ctx -> {
             double total = dishService.getTotalSales();
             ctx.json(new SalesResponse(total));
         });
-        app.post("/menu", ctx -> {
-            try {
-                Dish newDish = ctx.bodyAsClass(Dish.class);
-                dishService.addDish(newDish);
-                ctx.status(201).json(newDish);
-            } catch (IllegalArgumentException e) {
-                ctx.status(400).result(e.getMessage()); // Renvoie une erreur 400 (Bad Request)
-            }
-        });
-
     }
 
-    // Petite classe interne pour la réponse du statut (Optionnel)
+    // Classes internes pour les réponses JSON
     static class StatusResponse {
         public String status;
         public String message;
         public StatusResponse(String s, String m) { this.status = s; this.message = m; }
     }
-
 }
 
+// Classe pour la réponse des ventes
 class SalesResponse {
     public double totalSales;
-
-    public SalesResponse(double totalSales) {
-        this.totalSales = totalSales;
-    }
+    public SalesResponse(double totalSales) { this.totalSales = totalSales; }
 }
+
