@@ -6,7 +6,7 @@ public class Dish {
     private String name;
     private String description; // Ajouté pour correspondre à ton nouveau SQL
     private double price;
-    private String category;
+    private int category;
     private String imagePath; // Ajouté pour tes images
 
     public Dish() {}
@@ -44,11 +44,11 @@ public class Dish {
         this.price = price;
     }
 
-    public String getCategory() {
+    public int getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
+    public void setCategory(int category) {
         this.category = category;
     }
 
