@@ -9,6 +9,8 @@ import fr.isen.demo.service.DishServiceImpl;
 
 // Garde ces imports utilitaires si besoin
 import java.util.List;
+import java.util.Map;
+import java.util.List;
 
 /**
  * Classe principale pour le projet RestaurantConsole.
@@ -54,12 +56,20 @@ public class Main {
 
         app.post("/orders", ctx -> {
             try {
-                OrderRequest request = ctx.bodyAsClass(OrderRequest.class);
-                // Le service attend maintenant List<String> dishIds
-                Order finalOrder = dishService.createOrder(request.tableNumber, request.dishIds);
-                ctx.status(201).json(finalOrder);
+                Map<String, Object> body = ctx.bodyAsClass(Map.class);
+
+                // Utilisation de Number pour éviter le ClassCastException
+                Number tn = (Number) body.get("tableNumber");
+                int tableNumber = tn.intValue(); // Convertit proprement en int
+
+                List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("items");
+
+                Order order = dishService.createOrder(tableNumber, items);
+                ctx.status(201).json(order);
+
             } catch (Exception e) {
-                ctx.status(400).result("Erreur commande : " + e.getMessage());
+                System.err.println("❌ Erreur de traitement JSON : " + e.getMessage());
+                ctx.status(400).result("Format de commande invalide : " + e.getMessage());
             }
         });
 

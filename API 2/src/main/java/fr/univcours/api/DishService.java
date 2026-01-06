@@ -2,7 +2,6 @@ package fr.univcours.api;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +26,6 @@ public class DishService {
 
     public List<Dish> getAllDishes() {
         List<Dish> dishes = new ArrayList<>();
-        // TABLE CORRIGÉE : Dish
         String query = "SELECT id, name, description, price, category_id, image_path FROM Dish";
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
              Statement stmt = conn.createStatement();
@@ -38,7 +36,6 @@ public class DishService {
                 d.setName(rs.getString("name"));
                 d.setDescription(rs.getString("description"));
                 d.setPrice(rs.getDouble("price"));
-                // COLONNE CORRIGÉE : category_id
                 d.setCategory(rs.getInt("category_id"));
                 d.setImagePath(rs.getString("image_path"));
                 dishes.add(d);
@@ -48,7 +45,6 @@ public class DishService {
     }
 
     public void addDish(Dish dish) {
-        // TABLE CORRIGÉE : Dish | COLONNE CORRIGÉE : category_id
         String query = "INSERT INTO Dish (id, name, description, price, category_id, image_path) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(query)) {
@@ -65,7 +61,6 @@ public class DishService {
     }
 
     public void deleteDish(String id) {
-        // TABLE CORRIGÉE : Dish
         String query = "DELETE FROM Dish WHERE id = ?";
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(query)) {
@@ -78,25 +73,33 @@ public class DishService {
 
     // --- MÉTHODES POUR LES COMMANDES ---
 
-    public Order createOrder(int tableNumber, List<String> dishIds) {
-        if (dishIds == null || dishIds.isEmpty()) throw new IllegalArgumentException("Panier vide");
+    public Order createOrder(int tableNumber, List<Map<String, Object>> itemsData) {
+        if (itemsData == null || itemsData.isEmpty()) throw new IllegalArgumentException("Panier vide");
 
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) {
             conn.setAutoCommit(false);
             try {
-                // 1. Calcul du total (Requête sur la table Dish)
+                // 1. Calcul du total
                 double total = 0;
-                for (String id : dishIds) {
+                for (Map<String, Object> item : itemsData) {
+                    String dishId = (String) item.get("dishId");
+
+                    // Utilisation de Number pour éviter ClassCastException
+                    Number quantityNum = (Number) item.get("quantity");
+                    int quantity = quantityNum.intValue();
+
                     String q = "SELECT price FROM Dish WHERE id = ?";
                     try (PreparedStatement ps = conn.prepareStatement(q)) {
-                        ps.setString(1, id);
+                        ps.setString(1, dishId);
                         try (ResultSet rs = ps.executeQuery()) {
-                            if (rs.next()) total += rs.getDouble("price");
+                            if (rs.next()) {
+                                total += (rs.getDouble("price") * quantity);
+                            }
                         }
                     }
                 }
 
-                // 2. Insertion Commande (Table orders reste inchangée)
+                // 2. Insertion Commande
                 int generatedOrderId = 0;
                 String insertOrder = "INSERT INTO orders (table_number, total_amount) VALUES (?, ?)";
                 try (PreparedStatement psOrder = conn.prepareStatement(insertOrder, Statement.RETURN_GENERATED_KEYS)) {
@@ -108,17 +111,18 @@ public class DishService {
                     }
                 }
 
-                // 3. Insertion Items (Lien vers la table Dish)
-                String insertItem = "INSERT INTO order_items (order_id, dish_id, quantity) VALUES (?, ?, ?)";
+                // 3. Insertion Items avec Piment et Accompagnement (Utilisation de Number)
+                String insertItem = "INSERT INTO order_items (order_id, dish_id, quantity, piment, accompagnement) VALUES (?, ?, ?, ?, ?)";
                 try (PreparedStatement psItem = conn.prepareStatement(insertItem)) {
-                    Map<String, Integer> counts = new HashMap<>();
-                    for (String id : dishIds) {
-                        counts.put(id, counts.getOrDefault(id, 0) + 1);
-                    }
-                    for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+                    for (Map<String, Object> item : itemsData) {
                         psItem.setInt(1, generatedOrderId);
-                        psItem.setString(2, entry.getKey());
-                        psItem.setInt(3, entry.getValue());
+                        psItem.setString(2, (String) item.get("dishId"));
+
+                        // Conversion sécurisée des nombres
+                        psItem.setInt(3, ((Number) item.get("quantity")).intValue());
+                        psItem.setInt(4, ((Number) item.get("piment")).intValue());
+                        psItem.setInt(5, ((Number) item.get("accompagnement")).intValue());
+
                         psItem.addBatch();
                     }
                     psItem.executeBatch();
