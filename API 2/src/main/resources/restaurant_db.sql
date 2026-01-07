@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost
--- Généré le : mar. 06 jan. 2026 à 15:30
+-- Généré le : mer. 07 jan. 2026 à 10:55
 -- Version du serveur : 10.4.28-MariaDB
 -- Version de PHP : 8.2.4
 
@@ -106,6 +106,20 @@ CREATE TABLE `orders` (
   `order_date` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Déchargement des données de la table `orders`
+--
+
+INSERT INTO `orders` (`id`, `table_number`, `total_amount`, `order_date`) VALUES
+(1, 1, 6.90, '2026-01-06 16:10:19'),
+(2, 12, 19.80, '2026-01-06 16:14:29'),
+(3, 1, 19.80, '2026-01-07 08:18:42'),
+(4, 22, 11.00, '2026-01-07 08:19:23'),
+(5, 2, 11.00, '2026-01-07 08:19:53'),
+(6, 30, 16.40, '2026-01-07 09:04:19'),
+(7, 15, 25.30, '2026-01-07 09:16:05'),
+(8, 56, 9.90, '2026-01-07 09:43:38');
+
 -- --------------------------------------------------------
 
 --
@@ -116,8 +130,31 @@ CREATE TABLE `order_items` (
   `id` int(11) NOT NULL,
   `order_id` int(11) NOT NULL,
   `dish_id` varchar(10) NOT NULL,
-  `quantity` int(11) DEFAULT 1
+  `quantity` int(11) DEFAULT 1,
+  `piment` int(11) NOT NULL DEFAULT 0,
+  `accompagnement` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `dish_id`, `quantity`, `piment`, `accompagnement`) VALUES
+(1, 1, 'E1', 1, 0, 0),
+(2, 2, 'E10', 1, 0, 0),
+(3, 2, 'E10', 1, 0, 0),
+(4, 3, 'E10', 1, 0, 0),
+(5, 3, 'E10', 1, 0, 0),
+(6, 4, 'E2', 1, 0, 0),
+(7, 4, 'E2', 1, 0, 0),
+(8, 5, 'E2', 1, 0, 0),
+(9, 5, 'E2', 1, 0, 0),
+(10, 6, 'E10', 1, 2, 0),
+(11, 6, 'E3', 1, 0, 1),
+(12, 7, 'E10', 1, 0, 0),
+(13, 7, 'E10', 1, 0, 0),
+(14, 7, 'E2', 1, 2, 1),
+(15, 8, 'E10', 1, 2, 1);
 
 --
 -- Index pour les tables déchargées
@@ -164,13 +201,13 @@ ALTER TABLE `category`
 -- AUTO_INCREMENT pour la table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT pour la table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- Contraintes pour les tables déchargées
