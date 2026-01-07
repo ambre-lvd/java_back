@@ -1,6 +1,13 @@
 package fr.univcours.api;
 
 import io.javalin.Javalin;
+// NOUVEAUX IMPORTS MODELIO
+import fr.isen.demo.model.Dish;
+import fr.isen.demo.model.Order;
+import fr.isen.demo.service.DishService;
+import fr.isen.demo.service.DishServiceImpl;
+
+// Garde ces imports utilitaires si besoin
 import java.util.List;
 
 /**
@@ -8,7 +15,7 @@ import java.util.List;
  * Gère les routes API pour le menu et les commandes.
  */
 public class Main {
-    private static DishService dishService = new DishService();
+    private static DishService dishService = new DishServiceImpl();
 
     public static void main(String[] args) {
 
