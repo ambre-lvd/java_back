@@ -16,16 +16,16 @@ public class OrderRequest {
         this.tableNumber = value;
     }
 
-    private List<String> dishIds = new ArrayList<String> ();
+    private List<DishItemRequest> items = new ArrayList<DishItemRequest> ();
 
-    public List<String> getDishIds() {
+    public List<DishItemRequest> getItems() {
         // Automatically generated method. Please do not modify this code.
-        return this.dishIds;
+        return this.items;
     }
 
-    public void setDishIds(final List<String> value) {
+    public void setItems(final List<DishItemRequest> value) {
         // Automatically generated method. Please do not modify this code.
-        this.dishIds = value;
+        this.items = value;
     }
 
 }

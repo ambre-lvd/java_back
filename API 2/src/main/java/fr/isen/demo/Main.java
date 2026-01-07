@@ -3,11 +3,16 @@ package fr.isen.demo;
 import io.javalin.Javalin;
 import fr.isen.demo.model.Dish;
 import fr.isen.demo.model.Order;
-import fr.isen.demo.model.OrderRequest; // Import important !
+import fr.isen.demo.model.OrderRequest;
+import fr.isen.demo.model.DishItemRequest;
 import fr.isen.demo.service.DishService;
 import fr.isen.demo.service.DishServiceImpl;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Main {
+
     private static DishService dishService = new DishServiceImpl();
 
     public static void main(String[] args) {
@@ -18,9 +23,9 @@ public class Main {
             });
         }).start(7001);
 
-        System.out.println("🚀 Serveur Restaurant démarré sur http://localhost:7001 (Version Modelio)");
+        System.out.println("🚀 Serveur Restaurant démarré sur http://localhost:7001");
 
-        // --- SECTION : GESTION DE LA CARTE (MENU) ---
+        // --- 1. MENU ---
 
         app.get("/menu", ctx -> {
             ctx.json(dishService.getAllDishes());
@@ -32,7 +37,7 @@ public class Main {
                 dishService.addDish(newDish);
                 ctx.status(201).json(newDish);
             } catch (Exception e) {
-                ctx.status(400).result("Erreur lors de l'ajout : " + e.getMessage());
+                ctx.status(400).result("Erreur ajout : " + e.getMessage());
             }
         });
 
@@ -42,44 +47,46 @@ public class Main {
             ctx.status(204);
         });
 
-        // --- SECTION : GESTION DES COMMANDES (CORRIGÉE) ---
-        // C'est ici que j'ai tout changé pour utiliser OrderRequest
+        // --- 2. COMMANDES (VERSION FINALE) ---
+
         app.post("/orders", ctx -> {
             try {
-                // 1. On transforme le JSON reçu directement en objet OrderRequest
-                // C'est magique : ça remplit dishIds (List<String>) tout seul !
                 OrderRequest request = ctx.bodyAsClass(OrderRequest.class);
 
-                // 2. Appel du service (Maintenant les types sont bons !)
+                // CORRECTION ICI : Modelio renvoie déjà une List, on l'utilise directement !
+                List<DishItemRequest> itemsList = request.getItems();
+
+                // Petite sécurité au cas où la liste serait null
+                if (itemsList == null) {
+                    itemsList = new ArrayList<>();
+                }
+
                 Order order = dishService.createOrder(
                         request.getTableNumber(),
-                        request.getDishIds() // C'est bien une List<String> !
+                        itemsList
                 );
 
                 ctx.status(201).json(order);
 
             } catch (Exception e) {
-                System.err.println("❌ Erreur de traitement commande : " + e.getMessage());
-                // e.printStackTrace(); // Décommente si tu veux voir le détail
-                ctx.status(400).result("Format de commande invalide : " + e.getMessage());
+                System.err.println("❌ Erreur commande : " + e.getMessage());
+                ctx.status(400).result("Erreur : " + e.getMessage());
             }
         });
 
-        // --- SECTION : STATUS ---
+        // --- 3. STATUS ---
 
-        app.get("/", ctx -> ctx.result("API Restaurant Modelio opérationnelle."));
+        app.get("/", ctx -> ctx.result("API Restaurant opérationnelle."));
 
         app.get("/status", ctx -> {
-            ctx.json(new StatusResponse("Opérationnel", "Base Modelio connectée"));
+            ctx.json(new StatusResponse("Opérationnel", "Connecté BDD"));
         });
 
         app.get("/sales/total", ctx -> {
-            double total = dishService.getTotalSales();
-            ctx.json(new SalesResponse(total));
+            ctx.json(new SalesResponse(dishService.getTotalSales()));
         });
     }
 
-    // Classes internes pour les réponses JSON simples
     static class StatusResponse {
         public String status;
         public String message;

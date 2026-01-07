@@ -2,6 +2,7 @@ package fr.isen.demo.service;
 
 import java.util.List;
 import fr.isen.demo.model.Dish;
+import fr.isen.demo.model.DishItemRequest;
 import fr.isen.demo.model.Order;
 
 public interface DishService {
@@ -11,7 +12,7 @@ public interface DishService {
 
     void deleteDish(final String id);
 
-    Order createOrder(final int table, final List<String> ids);
+    Order createOrder(final int table, final List<DishItemRequest> items);
 
     double getTotalSales();
 
