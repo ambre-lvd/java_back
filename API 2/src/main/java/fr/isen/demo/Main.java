@@ -1,21 +1,12 @@
-package fr.univcours.api;
+package fr.isen.demo;
 
 import io.javalin.Javalin;
-// NOUVEAUX IMPORTS MODELIO
 import fr.isen.demo.model.Dish;
 import fr.isen.demo.model.Order;
+import fr.isen.demo.model.OrderRequest; // Import important !
 import fr.isen.demo.service.DishService;
 import fr.isen.demo.service.DishServiceImpl;
 
-// Garde ces imports utilitaires si besoin
-import java.util.List;
-import java.util.Map;
-import java.util.List;
-
-/**
- * Classe principale pour le projet RestaurantConsole.
- * Gère les routes API pour le menu et les commandes.
- */
 public class Main {
     private static DishService dishService = new DishServiceImpl();
 
@@ -27,7 +18,7 @@ public class Main {
             });
         }).start(7001);
 
-        System.out.println("🚀 Serveur Restaurant démarré sur http://localhost:7001");
+        System.out.println("🚀 Serveur Restaurant démarré sur http://localhost:7001 (Version Modelio)");
 
         // --- SECTION : GESTION DE LA CARTE (MENU) ---
 
@@ -45,40 +36,41 @@ public class Main {
             }
         });
 
-        // CORRECTION : On ne fait plus de Integer.parseInt car l'ID est un String (ex: "E1")
         app.delete("/menu/{id}", ctx -> {
             String id = ctx.pathParam("id");
             dishService.deleteDish(id);
             ctx.status(204);
         });
 
-        // --- SECTION : GESTION DES COMMANDES (ADDITION) ---
-
+        // --- SECTION : GESTION DES COMMANDES (CORRIGÉE) ---
+        // C'est ici que j'ai tout changé pour utiliser OrderRequest
         app.post("/orders", ctx -> {
             try {
-                Map<String, Object> body = ctx.bodyAsClass(Map.class);
+                // 1. On transforme le JSON reçu directement en objet OrderRequest
+                // C'est magique : ça remplit dishIds (List<String>) tout seul !
+                OrderRequest request = ctx.bodyAsClass(OrderRequest.class);
 
-                // Utilisation de Number pour éviter le ClassCastException
-                Number tn = (Number) body.get("tableNumber");
-                int tableNumber = tn.intValue(); // Convertit proprement en int
+                // 2. Appel du service (Maintenant les types sont bons !)
+                Order order = dishService.createOrder(
+                        request.getTableNumber(),
+                        request.getDishIds() // C'est bien une List<String> !
+                );
 
-                List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("items");
-
-                Order order = dishService.createOrder(tableNumber, items);
                 ctx.status(201).json(order);
 
             } catch (Exception e) {
-                System.err.println("❌ Erreur de traitement JSON : " + e.getMessage());
+                System.err.println("❌ Erreur de traitement commande : " + e.getMessage());
+                // e.printStackTrace(); // Décommente si tu veux voir le détail
                 ctx.status(400).result("Format de commande invalide : " + e.getMessage());
             }
         });
 
-        // --- SECTION : STATUT ET STATISTIQUES ---
+        // --- SECTION : STATUS ---
 
-        app.get("/", ctx -> ctx.result("API RestaurantConsole opérationnelle."));
+        app.get("/", ctx -> ctx.result("API Restaurant Modelio opérationnelle."));
 
         app.get("/status", ctx -> {
-            ctx.json(new StatusResponse("Opérationnel", "Base de données connectée"));
+            ctx.json(new StatusResponse("Opérationnel", "Base Modelio connectée"));
         });
 
         app.get("/sales/total", ctx -> {
@@ -87,7 +79,7 @@ public class Main {
         });
     }
 
-    // Classes internes pour les réponses JSON
+    // Classes internes pour les réponses JSON simples
     static class StatusResponse {
         public String status;
         public String message;
@@ -95,9 +87,7 @@ public class Main {
     }
 }
 
-// Classe pour la réponse des ventes
 class SalesResponse {
     public double totalSales;
     public SalesResponse(double totalSales) { this.totalSales = totalSales; }
 }
-

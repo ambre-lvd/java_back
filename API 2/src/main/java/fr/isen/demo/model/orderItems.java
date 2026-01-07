@@ -50,4 +50,28 @@ public class orderItems {
         this.quantity = value;
     }
 
+    private int piment;
+
+    public int getPiment() {
+        // Automatically generated method. Please do not modify this code.
+        return this.piment;
+    }
+
+    public void setPiment(final int value) {
+        // Automatically generated method. Please do not modify this code.
+        this.piment = value;
+    }
+
+    private int accompagnement;
+
+    public int getAccompagnement() {
+        // Automatically generated method. Please do not modify this code.
+        return this.accompagnement;
+    }
+
+    public void setAccompagnement(final int value) {
+        // Automatically generated method. Please do not modify this code.
+        this.accompagnement = value;
+    }
+
 }

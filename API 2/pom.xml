@@ -120,7 +120,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>fr.univcours.api.Main</mainClass>
+                                    <mainClass>fr.isen.demo.Main</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

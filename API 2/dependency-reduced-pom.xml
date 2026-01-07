@@ -18,7 +18,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>fr.univcours.api.Main</mainClass>
+                  <mainClass>fr.isen.demo.Main</mainClass>
                 </transformer>
               </transformers>
             </configuration>
