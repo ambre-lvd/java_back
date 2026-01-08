@@ -28,4 +28,6 @@ public class OrderRequest {
         this.items = value;
     }
 
+    public DishItemRequest dishItemRequest;
+
 }

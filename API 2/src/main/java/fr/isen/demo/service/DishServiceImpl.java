@@ -94,60 +94,42 @@ public class DishServiceImpl implements DishService {
     public Order createOrder(final int table, final List<DishItemRequest> items) {
 //begin of modifiable zone................T/f4aaa72b-a2aa-46be-9915-dd9271b2199c
         Order order = new Order();
-
-        // DEBUG 1 : Vérifier l'entrée
-        if (items == null || items.isEmpty()) {
-            System.out.println("⚠️ Reçu une liste de plats vide ou nulle !");
-            return null;
-        }
-        System.out.println("🔄 Traitement de la commande pour la table " + table + " (" + items.size() + " articles)");
-
+        if (items == null || items.isEmpty()) return null;
+        
         String url = "jdbc:mysql://localhost:3306/restaurant_db";
         String user = "root";
-        String pass = ""; // Mets "root" si tu es sur Mac/MAMP
-
+        String pass = "";
+        
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, pass)) {
-
+        
                 // 1. Calcul du total
                 double total = 0;
                 for (DishItemRequest item : items) {
                     try (java.sql.PreparedStatement ps = conn.prepareStatement("SELECT price FROM Dish WHERE id = ?")) {
                         ps.setString(1, item.getDishId());
                         java.sql.ResultSet rs = ps.executeQuery();
-                        if (rs.next()) {
-                            total += rs.getDouble("price");
-                        } else {
-                            System.err.println("⚠️ Attention : Le plat ID=" + item.getDishId() + " n'existe pas en base !");
-                        }
+                        if (rs.next()) total += rs.getDouble("price");
                     }
                 }
-                System.out.println("💰 Total calculé : " + total + "€");
-
+        
                 // 2. Création de la commande principale
                 int orderId = -1;
                 String sql = "INSERT INTO orders (table_number, total_amount) VALUES (?, ?)";
                 try (java.sql.PreparedStatement ps = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
                     ps.setInt(1, table);
                     ps.setDouble(2, total);
-                    int affectedRows = ps.executeUpdate();
-
-                    if (affectedRows == 0) {
-                        System.err.println("❌ Échec de la création de la commande, aucune ligne ajoutée.");
-                        return null;
-                    }
-
+                    ps.executeUpdate();
                     java.sql.ResultSet rs = ps.getGeneratedKeys();
                     if (rs.next()) {
                         orderId = rs.getInt(1);
                         order.setId(orderId);
-                        System.out.println("✅ Commande créée avec succès ! ID = " + orderId);
                     }
                 }
                 order.setTotalAmount(total);
-
-                // 3. Insertion des détails
+        
+                // 3. Insertion des détails (Table order_items) avec PIMENT et ACCOMPAGNEMENT
                 if (orderId != -1) {
                     String sqlItems = "INSERT INTO order_items (order_id, dish_id, quantity, piment, accompagnement) VALUES (?, ?, 1, ?, ?)";
                     try (java.sql.PreparedStatement psItems = conn.prepareStatement(sqlItems)) {
@@ -157,13 +139,11 @@ public class DishServiceImpl implements DishService {
                             psItems.setInt(3, item.getPiment());
                             psItems.setInt(4, item.getAccompagnement());
                             psItems.executeUpdate();
-                            System.out.println("   -> Article ajouté : " + item.getDishId() + " [Piment:" + item.getPiment() + ", Acc:" + item.getAccompagnement() + "]");
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            System.err.println("❌ ERREUR CRITIQUE BDD : " + e.getMessage());
             e.printStackTrace();
         }
 //end of modifiable zone..................E/f4aaa72b-a2aa-46be-9915-dd9271b2199c

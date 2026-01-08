@@ -1,5 +1,3 @@
-package fr.isen.demo;
-
 import io.javalin.Javalin;
 import fr.isen.demo.model.Dish;
 import fr.isen.demo.model.Order;

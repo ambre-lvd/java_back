@@ -18,7 +18,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>fr.isen.demo.Main</mainClass>
+                  <mainClass>Main</mainClass>
                 </transformer>
               </transformers>
             </configuration>
