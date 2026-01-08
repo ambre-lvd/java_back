@@ -51,13 +51,3 @@ Par défaut :
 2.  Laissez Maven télécharger les dépendances.
 3.  Cherchez la classe principale : **`Main.java`**.
 4.  Faites un clic droit -> **Run 'Main'**.
-
-### Via le terminal (Ligne de commande)
-Placez-vous dans le dossier du projet et lancez :
-
-```bash
-# Compilation et nettoyage
-mvn clean install
-
-# Lancement direct via le plugin exec (si configuré)
-mvn exec:java
