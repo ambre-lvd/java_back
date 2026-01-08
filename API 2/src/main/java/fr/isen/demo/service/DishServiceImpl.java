@@ -6,11 +6,6 @@ import fr.isen.demo.model.DishItemRequest;
 import fr.isen.demo.model.Order;
 
 public class DishServiceImpl implements DishService {
-    public static final String URL = "jdbc:mysql://localhost:3306/restaurant_db";
-
-    public static final String USER = "root";
-
-    public static final String PASS = "";
 
     public List<Dish> getAllDishes() {
 //begin of modifiable zone................T/da1f72bf-8c0a-4f1d-a080-1bd60e1f3176

@@ -5,29 +5,30 @@ import fr.isen.demo.model.OrderRequest;
 import fr.isen.demo.model.DishItemRequest;
 import fr.isen.demo.service.DishService;
 import fr.isen.demo.service.DishServiceImpl;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
 
-    private static DishService dishService = new DishServiceImpl();
+    private static final DishService dishService = new DishServiceImpl();
 
     public static void main(String[] args) {
 
-        Javalin app = Javalin.create(config -> {
-            config.plugins.enableCors(cors -> {
-                cors.add(it -> it.anyHost());
-            });
-        }).start(7001);
+        Javalin app = Javalin.create(config ->
+            config.plugins.enableCors(cors ->
+                cors.add(CorsPluginConfig::anyHost)
+            )
+        ).start(7001);
 
         System.out.println("🚀 Serveur Restaurant démarré sur http://localhost:7001");
 
         // --- 1. MENU ---
 
-        app.get("/menu", ctx -> {
-            ctx.json(dishService.getAllDishes());
-        });
+        app.get("/menu", ctx ->
+            ctx.json(dishService.getAllDishes())
+        );
 
         app.post("/menu", ctx -> {
             try {
@@ -76,13 +77,13 @@ public class Main {
 
         app.get("/", ctx -> ctx.result("API Restaurant opérationnelle."));
 
-        app.get("/status", ctx -> {
-            ctx.json(new StatusResponse("Opérationnel", "Connecté BDD"));
-        });
+        app.get("/status", ctx ->
+            ctx.json(new StatusResponse("Opérationnel", "Connecté BDD"))
+        );
 
-        app.get("/sales/total", ctx -> {
-            ctx.json(new SalesResponse(dishService.getTotalSales()));
-        });
+        app.get("/sales/total", ctx ->
+            ctx.json(new SalesResponse(dishService.getTotalSales()))
+        );
     }
 
     static class StatusResponse {
