@@ -1,0 +1,163 @@
+openapi: 3.0.0
+info:
+  title: API Restaurant NetWok
+  description: Documentation générée à partir du serveur Javalin (Main.java). Gère le menu, les commandes et les statistiques.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:7001
+    description: Serveur local de développement
+
+paths:
+  # --- Gestion du Menu ---
+  /menu:
+    get:
+      summary: Récupérer le menu complet
+      description: Retourne la liste de tous les plats disponibles via DishService.
+      responses:
+        '200':
+          description: Liste des plats récupérée.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dish'
+    post:
+      summary: Ajouter un nouveau plat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Dish'
+      responses:
+        '201':
+          description: Plat ajouté avec succès.
+        '400':
+          description: Erreur dans le format du plat.
+
+  /menu/{id}:
+    delete:
+      summary: Supprimer un plat
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Plat supprimé.
+
+  # --- Gestion des Commandes ---
+  /orders:
+    post:
+      summary: Créer une commande
+      description: Reçoit un OrderRequest contenant le numéro de table et la liste des items.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+      responses:
+        '201':
+          description: Commande créée et enregistrée en base.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Erreur lors de la création de la commande (JSON invalide).
+
+  # --- Status et Ventes ---
+  /status:
+    get:
+      summary: Vérifier l'état du serveur
+      responses:
+        '200':
+          description: Retourne l'état opérationnel et la connexion BDD.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /sales/total:
+    get:
+      summary: Obtenir le total des ventes
+      responses:
+        '200':
+          description: Montant total des ventes cumulées.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesResponse'
+
+components:
+  schemas:
+    Dish:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        categoryId:
+          type: integer
+        imagePath:
+          type: string
+
+    OrderRequest:
+      type: object
+      properties:
+        tableNumber:
+          type: integer
+          example: 5
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DishItemRequest'
+
+    DishItemRequest:
+      type: object
+      properties:
+        dishId:
+          type: string
+        piment:
+          type: integer
+        accompagnement:
+          type: integer
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        tableNumber:
+          type: integer
+        totalPrice:
+          type: number
+          format: double
+
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "Opérationnel"
+        message:
+          type: string
+          example: "Connecté BDD"
+
+    SalesResponse:
+      type: object
+      properties:
+        totalSales:
+          type: number
+          format: double

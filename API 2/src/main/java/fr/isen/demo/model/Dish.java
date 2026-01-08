@@ -2,7 +2,7 @@ package fr.isen.demo.model;
 
 
 /**
- * Classe User représentant un  utilisateur lambda
+ * Classe User représentant un utilisateur lambda
  */
 public class Dish {
     private String id;
