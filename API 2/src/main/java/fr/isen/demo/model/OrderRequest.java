@@ -28,6 +28,6 @@ public class OrderRequest {
         this.items = value;
     }
 
-    public DishItemRequest dishItemRequest;
+    private List<DishItemRequest> dishItemRequest = new ArrayList<DishItemRequest> ();
 
 }

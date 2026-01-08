@@ -1,6 +1,8 @@
 package fr.isen.demo.model;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class Order {
     private int id;
@@ -49,6 +51,18 @@ public class Order {
     public void setOrderDate(final Date value) {
         // Automatically generated method. Please do not modify this code.
         this.orderDate = value;
+    }
+
+    private List<OrderItems> orderItems = new ArrayList<OrderItems> ();
+
+    public List<OrderItems> getOrderItems() {
+        // Automatically generated method. Please do not modify this code.
+        return this.orderItems;
+    }
+
+    public void setOrderItems(final List<OrderItems> value) {
+        // Automatically generated method. Please do not modify this code.
+        this.orderItems = value;
     }
 
 }

@@ -2,7 +2,7 @@ package fr.isen.demo.model;
 
 
 /**
- * Classe User représentant un utilisateur lambda
+ * Classe User représentant un  utilisateur lambda
  */
 public class Dish {
     private String id;
@@ -68,14 +68,26 @@ public class Dish {
         this.imagePath = value;
     }
 
-    private int category;
+    private boolean disponibilite;
 
-    public int getCategory() {
+    public boolean isDisponibilite() {
+        // Automatically generated method. Please do not modify this code.
+        return this.disponibilite;
+    }
+
+    public void setDisponibilite(final boolean value) {
+        // Automatically generated method. Please do not modify this code.
+        this.disponibilite = value;
+    }
+
+    private Category category;
+
+    public Category getCategory() {
         // Automatically generated method. Please do not modify this code.
         return this.category;
     }
 
-    public void setCategory(final int value) {
+    public void setCategory(final Category value) {
         // Automatically generated method. Please do not modify this code.
         this.category = value;
     }

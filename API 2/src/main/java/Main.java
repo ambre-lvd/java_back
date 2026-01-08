@@ -4,7 +4,7 @@ import fr.isen.demo.model.Order;
 import fr.isen.demo.model.OrderRequest;
 import fr.isen.demo.model.DishItemRequest;
 import fr.isen.demo.service.DishService;
-import fr.isen.demo.service.DishServiceImpl;
+import Impl.DishServiceImpl;
 import io.javalin.plugin.bundled.CorsPluginConfig;
 
 import java.util.ArrayList;
